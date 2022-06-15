@@ -1,0 +1,5 @@
+*fake_ros_topics/*
+*__pycache__/*
+*.exe
+*.dll
+*.pyc
