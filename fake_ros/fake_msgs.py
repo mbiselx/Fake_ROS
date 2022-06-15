@@ -10,13 +10,15 @@ except ImportError : # else do something stupid
 
 
 def read_free_file(file) :
-	try :
-		os.rename(file, file) # check if file is in use
-	except :
-		rospy.Rate(100).sleep()
-	f = open(file, 'r')
-	string = f.read()
-	f.close()
+	while True :
+		try :
+			os.rename(file, file) # check if file is in use
+			f = open(file, 'r')
+			string = f.read()
+			f.close()
+			break
+		except :
+			rospy.Rate(100).sleep()
 	return string
 
 
@@ -198,7 +200,7 @@ class LaserScan():
 
 		self.range_min = 0.0
 		self.range_max = float('inf')
-		self.ranges = list()
+		self.ranges    = list()
 		self.intensities = list()
 
 		self.angle_min = -float('inf')
@@ -209,7 +211,13 @@ class LaserScan():
 		self.scan_time = 0
 
 	def __str__(self):
-		out = str(self.header) + "\n"
+		out  = str(self.header) + "\n"
+		out += "t : {}, {}\n".format(self.time_increment, self.scan_time)
+		out += "angles : [{} : {} : {}]\n".format(self.angle_min, self.angle_max, self.angle_increment)
+		out += "range_info : [{} : {}]\n".format(self.range_min, self.range_max)
+		out += "ranges : {}\n".format(self.ranges)
+		out += "intensities : {}\n".format(self.intensities)
+
 		return out
 
 	def read(string):
@@ -220,6 +228,12 @@ class LaserScan():
 		try :
 			lines = string.split('\n')
 			self.header = Header.read(lines[0])
+			self.time_increment, self.scan_time = re.findall(r"[-+]?(?:\d*\.\d+|\d+)", lines[1])
+			self.angle_min, self.angle_max, self.angle_increment = re.findall(r"[-+]?(?:\d*\.\d+|\d+)", lines[2])
+			self.range_min, self.range_max = re.findall(r"[-+]?(?:\d*\.\d+|\d+)", lines[3])
+			self.ranges = re.findall(r"[-+]?(?:\d*\.\d+|\d+)", lines[4])
+			self.intensities = re.findall(r"[-+]?(?:\d*\.\d+|\d+)", lines[5])
+
 			return self
 		except Exception as e:
 			rospy.logerr("could not read message : " + str(e))

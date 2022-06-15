@@ -44,13 +44,15 @@ class Publisher():
 		if not type(msg) == self.msg_class :
 			msg = self.msg_class(msg)
 
-		try :
-			os.rename(self.topic, self.topic) # check if file is in use
-		except :
-			Rate(100).sleep()
-		f = open(self.topic, "w")
-		f.write(str(msg))
-		f.close()
+		while True :
+			try :
+				os.rename(self.topic, self.topic) # check if file is in use
+				f = open(self.topic, "w")
+				f.write(str(msg))
+				f.close()
+				break
+			except :
+				Rate(100).sleep()
 
 
 class Subscriber():

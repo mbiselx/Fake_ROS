@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# the shebang is ignored in ROS, so we can force the non-ROS environment
 
 try : # import ROS if it exists
 	import rospy
@@ -7,7 +6,7 @@ try : # import ROS if it exists
 except ImportError : # else do something stupid
 	print("Sorry, I can't find ROS on your system\nSubstituiting fake garbage instead")
 	import fake_ros.fake_rospy as rospy
-	from fake_ros.fake_msgs import String
+	from fake_ros.fake_msgs import *
 
 
 def callback(data):
