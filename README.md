@@ -49,7 +49,7 @@ try :                   # import ROS if it exists
 	from   std_msgs.msg import String
 except ImportError :    # else do something stupid
 	import fake_ros.fake_rospy  as rospy   
-    import fake_ros.fake_rospkg as rospkg
+	import fake_ros.fake_rospkg as rospkg
 	from   fake_ros.fake_msgs   import String  
 ```
 
@@ -59,6 +59,8 @@ and _it just works_<sup>TM</sup>
 
 At least... the standard ROS tutorial [talker and listener](http://wiki.ros.org/ROS/Tutorials/WritingPublisherSubscriber%28python%29)
 should work, with like one line in the listener that needs to be changed, because I couldn't be bothered to do a C-style print for the loggers.
+
+There's also a simple 'live plotter' called fake_rviz, which can live-plot a point cloud or a vector. 
 
 
 ## supported messages

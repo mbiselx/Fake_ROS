@@ -95,7 +95,7 @@ class Header():
 		self.stamp = stamp
 		self.frame_id = frame_id
 	def __str__(self):
-		return "H : {}s, {}".format(str(self.stamp), self.frame_id)
+		return "H : {:.9}s, {}".format(str(self.stamp), self.frame_id)
 	def read(string):
 		"""
 		this should convert from a UTF-8 string to the python object
@@ -108,7 +108,7 @@ class Header():
 			stamp = float(re.findall(r"(\d*\.\d+|\d+)", stamp)[0])
 			return Header(rospy.Time.from_sec(stamp), frame_id)
 		except Exception as e:
-			rospy.logerr("could not read message : " + str(e))
+			rospy.logerr("could not read Header message : " + str(e))
 			return Header()
 
 
@@ -120,34 +120,38 @@ class Vector3():
 		self.y = float(y)
 		self.z = float(z)
 	def __str__(self, sep=', ') :
-		return sep.join([str(self.x), str(self.y), str(self.z)])
+		return sep.join([str(round(self.x,9)), str(round(self.y,9)), str(round(self.z,9))])
 	def read(string) :
-		if os.sep in string : # we assume it is a filename
-			string = read_free_file(file)
-		try :
-			elems = re.findall(r"[-+]?(?:\d*\.\d+|\d+)", string)
-			if len(elems) != 3 : raise Exception("Bad number of arguments given!")
-			return Vector3(*elems)
-		except Exception as e:
-			rospy.logerr("could not read message : " + str(e))
-			return Vector3()
+		path = string if os.sep in string else None # we assume it is a filename
+		while True :
+			if path :
+				string = read_free_file(path)
+			try :
+				elems = re.findall(r"[-+]?(?:\d*\.\d+|\d+)", string)
+				if len(elems) != 3 : raise Exception("Bad number of Vector3 arguments given!: {}".format(elems))
+				return Vector3(*elems)
+			except Exception as e:
+				rospy.logerr("could not read Vector3 message : " + str(e))
+
 class Quaternion(Vector3):
 	def __init__(self, x=0, y=0, z=0, w=0):
 		super(Quaternion, self).__init__(x,y,z)
 		self.w = float(w)
 	def __str__(self, sep=', '):  #printed as [w, x, y, z]
 		out = super(Quaternion, self).__str__(sep)
-		return sep.join([str(self.w), out])
+		return sep.join(['{:.9}'.format(self.w), out])
 	def read(string) :
-		if os.sep in string : # we assume it is a filename
-			string = read_free_file(string)
-		try :
-			elems = re.findall(r"[-+]?(?:\d*\.\d+|\d+)", string) #printed as [w, x, y, z]
-			if len(elems) != 4 : raise Exception("Bad number of arguments given!")
-			return Quaternion(elems[1], elems[2], elems[4], elems[0])
-		except Exception as e:
-			rospy.logerr("could not read message : " + str(e))
-			return Quaternion()
+		path = string if os.sep in string else None # we assume it is a filename
+		while True :
+			if path :
+				string = read_free_file(path)
+			try :
+				elems = re.findall(r"[-+]?(?:\d*\.\d+|\d+)", string) #printed as [w, x, y, z]
+				if len(elems) != 4 : raise Exception("Bad number of Quaternion arguments given!")
+				return Quaternion(elems[1], elems[2], elems[4], elems[0])
+			except Exception as e:
+				rospy.logerr("could not read Quaternion message : " + str(e))
+
 
 # sensor_msgs.msg.Imu
 class Imu():
@@ -199,45 +203,48 @@ class LaserScan():
 		self.header = Header()
 
 		self.range_min = 0.0
-		self.range_max = float('inf')
+		self.range_max = 0.0
 		self.ranges    = list()
 		self.intensities = list()
 
-		self.angle_min = -float('inf')
-		self.angle_max =  float('inf')
-		self.angle_increment = 0
+		self.angle_min = 0.0
+		self.angle_max = 0.0
+		self.angle_increment = 0.0
 
-		self.time_increment = 0
-		self.scan_time = 0
+		self.time_increment = 0.0
+		self.scan_time = 0.0
 
 	def __str__(self):
 		out  = str(self.header) + "\n"
-		out += "t : {}, {}\n".format(self.time_increment, self.scan_time)
-		out += "angles : [{} : {} : {}]\n".format(self.angle_min, self.angle_max, self.angle_increment)
-		out += "range_info : [{} : {}]\n".format(self.range_min, self.range_max)
-		out += "ranges : {}\n".format(self.ranges)
-		out += "intensities : {}\n".format(self.intensities)
+		out += "t : {:.9}, {:.9}\n".format(self.time_increment, self.scan_time)
+		out += "angles : [{:.9} : {:.9} : {:.9}]\n".format(self.angle_min, self.angle_max, self.angle_increment)
+		out += "range_info : [{:.9} : {:.9}]\n".format(self.range_min, self.range_max)
+		out += "ranges : {}\n".format(list(map(lambda n : round(n,9), self.ranges)))
+		out += "intensities : {}\n".format(list(map(lambda n : round(n,9), self.intensities)))
 
 		return out
 
 	def read(string):
 		self = LaserScan()
-		if os.sep in string : # we assume it is a filename
-			string = read_free_file(string)
+		path = string if os.sep in string else None # we assume it is a filename
 
-		try :
-			lines = string.split('\n')
-			self.header = Header.read(lines[0])
-			self.time_increment, self.scan_time = re.findall(r"[-+]?(?:\d*\.\d+|\d+)", lines[1])
-			self.angle_min, self.angle_max, self.angle_increment = re.findall(r"[-+]?(?:\d*\.\d+|\d+)", lines[2])
-			self.range_min, self.range_max = re.findall(r"[-+]?(?:\d*\.\d+|\d+)", lines[3])
-			self.ranges = re.findall(r"[-+]?(?:\d*\.\d+|\d+)", lines[4])
-			self.intensities = re.findall(r"[-+]?(?:\d*\.\d+|\d+)", lines[5])
+		while True :
+			if path :
+				string = read_free_file(path)
 
-			return self
-		except Exception as e:
-			rospy.logerr("could not read message : " + str(e))
-			return self
+			try :
+				lines = string.split('\n')
+				self.header = Header.read(lines[0])
+				self.time_increment, self.scan_time = list(map(float, re.findall(r"[-+]?(?:\d*\.\d+|\d+)", lines[1])))
+				self.angle_min, self.angle_max, self.angle_increment = list(map(float, re.findall(r"[-+]?(?:\d*\.\d+|\d+)", lines[2])))
+				self.range_min, self.range_max = list(map(float, re.findall(r"[-+]?(?:\d*\.\d+|\d+)", lines[3])))
+				self.ranges = list(map(float, re.findall(r"[-+]?(?:\d*\.\d+|\d+)", lines[4])))
+				self.intensities = list(map(float, re.findall(r"[-+]?(?:\d*\.\d+|\d+)", lines[5])))
+				return self
+
+			except Exception as e:
+				rospy.logerr("could not read LaserScan message : " + str(e))
+
 
 
 # nav_msgs.msg.Twist
@@ -260,5 +267,5 @@ class Twist():
 			angular = Vector3.read(lines[1])
 			return Twist(linear.x, linear.y, linear.z, angular.x, angular.y, angular.z)
 		except Exception as e:
-			rospy.logerr("could not read message : " + str(e))
+			rospy.logerr("could not read Twist message : " + str(e))
 			return self
